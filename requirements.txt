@@ -1,0 +1,9 @@
+SQLAlchemy==2.0.41
+alembic==1.16.2
+pandas==2.3.0
+openpyxl==3.1.5
+typer==0.16.0
+pytest==8.4.1
+python-dotenv==1.1.1
+psycopg2-binary==2.9.10
+streamlit==1.41.1
