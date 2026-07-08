@@ -16,7 +16,8 @@
     "next": "^16.2.10",
     "pg": "^8.13.1",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "read-excel-file": "^9.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

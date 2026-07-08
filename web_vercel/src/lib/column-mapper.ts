@@ -10,19 +10,23 @@ export type CanonicalColumn =
 const COLUMN_ALIASES: Record<CanonicalColumn, string[]> = {
   order_number: [
     "numero de pedido jms",
+    "n mero de pedido jms",
     "numero pedido jms",
+    "n mero pedido jms",
     "numero de pedido",
+    "n mero de pedido",
     "pedido",
     "order number"
   ],
   driver_name: [
     "responsavel pela entrega",
+    "respons vel pela entrega",
     "entregador",
     "motorista",
     "driver",
     "driver name"
   ],
-  delivery_time: ["horario da entrega", "hora entrega", "delivery time"],
+  delivery_time: ["horario da entrega", "hor rio da entrega", "hora entrega", "delivery time"],
   delivery_datetime: ["data final", "data entrega", "delivery datetime"],
   created_datetime: ["data inicio", "data criacao", "created datetime"]
 };

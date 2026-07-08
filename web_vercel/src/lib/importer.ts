@@ -1,5 +1,5 @@
-import ExcelJS from "exceljs";
 import type { PoolClient } from "pg";
+import readXlsxFile from "read-excel-file/node";
 import { getPool } from "./db";
 import { mapHeader, type CanonicalColumn } from "./column-mapper";
 import {
@@ -23,9 +23,7 @@ type RawRow = Record<string, unknown>;
 type MappedRow = Partial<Record<CanonicalColumn, unknown>>;
 
 export async function importExcelFile(fileName: string, buffer: ArrayBuffer): Promise<ImportResult> {
-  const workbook = new ExcelJS.Workbook();
-  const loadWorkbook = workbook.xlsx.load as unknown as (data: unknown) => Promise<ExcelJS.Workbook>;
-  await loadWorkbook(Buffer.from(new Uint8Array(buffer)));
+  const sheets = await readXlsxFile(Buffer.from(new Uint8Array(buffer)));
 
   const client = await getPool().connect();
   let batchId: number | null = null;
@@ -51,8 +49,8 @@ export async function importExcelFile(fileName: string, buffer: ArrayBuffer): Pr
       errorRows: 0
     };
 
-    for (const worksheet of workbook.worksheets) {
-      const rows = extractWorksheetRows(worksheet);
+    for (const sheet of sheets) {
+      const rows = cleanRows(sheet.data as unknown[][]);
       if (!rows.length) continue;
 
       const headers = rows[0];
@@ -60,13 +58,13 @@ export async function importExcelFile(fileName: string, buffer: ArrayBuffer): Pr
       if (!columnMap.includes("order_number")) continue;
 
       for (let index = 1; index < rows.length; index += 1) {
-        const rawRow = buildRawRow(headers, rows[index], worksheet.name);
+        const rawRow = buildRawRow(headers, rows[index], sheet.sheet);
         const mappedRow = buildMappedRow(columnMap, rows[index]);
         if (isEmptyMappedRow(mappedRow)) continue;
 
         result.totalRows += 1;
         try {
-          const imported = await importRow(client, mappedRow, worksheet.name, fileName);
+          const imported = await importRow(client, mappedRow, sheet.sheet, fileName);
           if (imported) {
             result.importedRows += 1;
           } else {
@@ -138,28 +136,10 @@ export async function importExcelFile(fileName: string, buffer: ArrayBuffer): Pr
   }
 }
 
-function extractWorksheetRows(worksheet: ExcelJS.Worksheet): unknown[][] {
-  const rows: unknown[][] = [];
-  worksheet.eachRow({ includeEmpty: false }, (row) => {
-    const values = row.values as unknown[];
-    const normalized = values.slice(1).map((value) => normalizeCellValue(value));
-    if (normalized.some((value) => value !== null && value !== "")) {
-      rows.push(normalized);
-    }
-  });
-  return rows;
-}
-
-function normalizeCellValue(value: unknown): unknown {
-  if (value === undefined) return null;
-  if (value instanceof Date) return value;
-  if (typeof value === "object" && value !== null && "text" in value) {
-    return (value as { text?: string }).text ?? null;
-  }
-  if (typeof value === "object" && value !== null && "result" in value) {
-    return (value as { result?: unknown }).result ?? null;
-  }
-  return value;
+function cleanRows(rows: unknown[][]): unknown[][] {
+  return rows.filter((row) =>
+    row.some((value) => value !== null && value !== undefined && String(value).trim() !== "")
+  );
 }
 
 function buildRawRow(headers: unknown[], row: unknown[], sheetName: string): RawRow {

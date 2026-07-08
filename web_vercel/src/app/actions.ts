@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { clearSessionCookie, createSession, requireSession, setSessionCookie, verifyPassword } from "@/lib/auth";
 import { getPool } from "@/lib/db";
-import { importExcelFile } from "@/lib/importer";
 import { isClosedStatus } from "@/lib/status";
 
 function asText(value: FormDataEntryValue | null): string {
@@ -95,25 +94,6 @@ export async function createCareacaoAction(formData: FormData): Promise<void> {
   revalidatePath("/pedidos");
   revalidatePath("/careacoes");
   redirect("/careacoes");
-}
-
-export async function uploadExcelAction(formData: FormData): Promise<void> {
-  await requireSession();
-
-  const file = formData.get("file");
-  if (!(file instanceof File) || file.size === 0) {
-    redirect("/upload?erro=arquivo");
-  }
-
-  if (!file.name.toLowerCase().endsWith(".xlsx")) {
-    redirect("/upload?erro=formato");
-  }
-
-  const result = await importExcelFile(file.name, await file.arrayBuffer());
-  revalidatePath("/");
-  revalidatePath("/upload");
-  revalidatePath("/importacoes");
-  redirect(`/upload?batch=${result.batchId}`);
 }
 
 export async function updateCareacaoAction(formData: FormData): Promise<void> {

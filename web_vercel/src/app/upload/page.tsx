@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/auth";
 import { getImportBatch } from "@/lib/data";
-import { uploadExcelAction } from "../actions";
 
 export const maxDuration = 60;
 
@@ -23,7 +22,7 @@ export default async function UploadPage({
           <h2>Importar arquivo Excel</h2>
         </div>
         <div className="card">
-          <form className="form" action={uploadExcelAction}>
+          <form className="form" action="/api/upload" method="POST" encType="multipart/form-data">
             {params.erro === "arquivo" ? <div className="error">Selecione uma planilha.</div> : null}
             {params.erro === "formato" ? <div className="error">Envie um arquivo .xlsx.</div> : null}
             <div className="field">
