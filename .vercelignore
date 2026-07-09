@@ -4,15 +4,6 @@ __pycache__
 data
 legacy_python
 runtime
-app
-tests
-migrations/versions
-migrations/env.py
-migrations/script.py.mako
-migrations/README
-alembic.ini
-requirements.txt
-*.bat
-setup.sh
 *.zip
+*.log
 web_vercel

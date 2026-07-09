@@ -2,58 +2,51 @@
 
 Data: 2026-07-09
 
-## 1. Arquitetura encontrada
+## 1. Estado encontrado antes da consolidacao
 
-O projeto esta dividido em duas aplicacoes dentro do mesmo repositorio.
+O repositorio tinha duas arquiteturas operacionais:
 
-### Python local
+- Aplicacao local Python para importacao, painel Streamlit, CLI, SQLAlchemy e Alembic.
+- Aplicacao web Next.js em subpasta para Vercel.
 
-- Pasta principal: `app/`
-- Uso: automacao local, CLI, Streamlit, importacao Excel/CSV, relatorios locais e migrations Alembic.
-- Banco: PostgreSQL Neon via SQLAlchemy/psycopg2.
-- Interface local: `app/streamlit_app.py`.
-- CLI: `app/cli.py` e `app/main.py`.
-- Models: `app/models.py`.
-- Migrations: `migrations/versions/`.
+Esse desenho causava risco real de deploy incorreto, duplicidade de regras e manutencao mais dificil.
 
-### Web para Vercel
+## 2. Problemas identificados
 
-- Pasta principal: `web_vercel/`
-- Frontend/backend: Next.js App Router com React.
-- Server-side: Server Components, Server Actions e API Routes Node.js.
-- Banco: PostgreSQL Neon via `pg`.
-- Deploy: Vercel, com `Root Directory` esperado como `web_vercel`.
-- Autenticacao: senha unica de administrador via cookie assinado.
+| ID | Severidade | Problema | Causa provavel | Status atual |
+| -- | ---------- | -------- | -------------- | ------------ |
+| QA-001 | Bloqueador | Vercel podia executar a aplicacao errada | Web ficava em subpasta e Python na raiz | Corrigido |
+| QA-002 | Critico | Upload XLSX podia gerar 500 | Parser anterior nao era robusto para planilha real | Corrigido |
+| QA-003 | Alto | Arquivo sem cabecalho reconhecido podia ficar confuso | Cabecalho nem sempre esta na primeira linha | Corrigido |
+| QA-004 | Medio | Sem testes automatizados web | Nao havia runner de testes Next.js | Corrigido com Vitest |
+| QA-005 | Medio | Sem paginacao real em careacoes | Lista limitada sem total/pagina | Corrigido |
+| QA-006 | Medio | Sem historico de alteracoes | Apenas estado atual era salvo | Corrigido |
+| QA-007 | Medio | Relatorio filtrado ausente | Exportacao era geral | Corrigido |
+| QA-008 | Medio | Sem confirmacao para resolver/cancelar | Formulario salvava direto | Corrigido |
 
-## 2. Fluxo atual da aplicacao
+## 3. Estado consolidado
 
-1. Usuario acessa a aplicacao web.
-2. `RootLayout` chama `readSession()` e decide se mostra layout autenticado ou tela de login.
-3. Login usa `loginAction()` em `web_vercel/src/app/actions.ts`.
-4. Dashboard consulta `getDashboardStats()` e `getRecentOpenCases()`.
-5. Upload em `/upload` envia formulario multipart para `/api/upload`.
-6. `/api/upload` valida sessao, extensao `.xlsx`, carrega o arquivo em memoria e chama `importExcelFile()`.
-7. `importExcelFile()` cria `import_batches`, le abas do XLSX em memoria, mapeia colunas, normaliza dados, cria motoristas/pedidos e registra erros por linha.
-8. Tela `/pedidos` pesquisa pedidos e permite abrir manualmente uma careacao.
-9. Tela `/careacoes` lista casos com filtros por status, motorista e periodo.
-10. Tela `/careacoes/[id]` altera status, valor, culpa do cliente, motivo, observacao interna e resposta do motorista.
-11. `/api/relatorios` gera Excel em memoria e retorna download.
+- Aplicacao operacional unica em Next.js na raiz.
+- Migrations oficiais em SQL.
+- Banco Neon acessado via `pg`.
+- Upload e relatorios sem filesystem persistente.
+- Careacoes manuais, com historico e confirmacao para status final.
+- Testes unitarios web configurados.
+- Python local removido do controle do Git.
 
-## 3. Dependencias principais
+## 4. Fluxo atual
 
-### Python
+1. Usuario acessa a aplicacao e faz login.
+2. Dashboard consulta indicadores no Neon.
+3. Upload envia `.xlsx` para `/api/upload`.
+4. Importador le abas em memoria, detecta cabecalho, normaliza dados e grava pedidos.
+5. Duplicidades sao ignoradas.
+6. Erros por linha sao salvos.
+7. Usuario pesquisa pedido e abre careacao manualmente.
+8. Usuario acompanha careacoes com filtros, busca, paginacao e exportacao filtrada.
+9. Detalhe da careacao registra historico de alteracoes.
 
-- SQLAlchemy
-- Alembic
-- Pandas
-- OpenPyXL
-- Typer
-- pytest
-- python-dotenv
-- psycopg2-binary
-- Streamlit
-
-### Web
+## 5. Dependencias principais
 
 - Next.js
 - React
@@ -62,77 +55,31 @@ O projeto esta dividido em duas aplicacoes dentro do mesmo repositorio.
 - jszip
 - fast-xml-parser
 - dotenv
+- Vitest
+- TypeScript
 
-## 4. Pontos frageis
+## 6. Riscos restantes
 
-- O repositorio contem duas arquiteturas validas, mas isso confunde deploy se a Vercel usar a raiz em vez de `web_vercel`.
-- O app web e o app Python mantem logicas parecidas de importacao, mas nao sao uma unica fonte de verdade.
-- A importacao web depende de mapeamento de cabecalhos; variacoes fora da lista podem gerar lote sem pedidos.
-- O parser XLSX web e intencionalmente simples para ser compativel com Vercel; formulas/formatos complexos devem ser testados com planilhas reais.
-- Upload e processamento ocorrem em uma funcao serverless; arquivos muito grandes podem bater limite de tempo/memoria.
-- Nao ha paginacao real em careacoes, apenas `LIMIT 100`.
-- Nao ha historico de alteracoes de careacao.
-- Nao ha teste automatizado dedicado para a parte Next.js.
-- Nao ha lint configurado para o web app.
+- Arquivos muito grandes podem ultrapassar limites serverless.
+- Falta teste end-to-end com Playwright.
+- Falta banco de teste dedicado para integracao automatizada.
+- Autenticacao ainda e senha unica administrativa.
 
-## 5. Erros encontrados
+## 7. Validacoes executadas
 
-| ID | Severidade | Problema | Causa provavel | Status |
-| -- | ---------- | -------- | -------------- | ------ |
-| QA-001 | Bloqueador | Vercel retornava 500 na raiz | Deploy apontava para a raiz Python e tentava executar `app.main:app` como ASGI/WSGI | Corrigido por deploy a partir de `web_vercel` e ajuste de Root Directory |
-| QA-002 | Critico | `/api/upload` retornava 500 | Pacote `read-excel-file` falhava com `Cannot read properties of undefined (reading 'trim')` em planilha real | Corrigido trocando para parser em memoria com `jszip` + `fast-xml-parser` |
-| QA-003 | Alto | Upload criava lote `success` com zero linhas | Importador procurava cabecalho apenas na primeira linha | Corrigido para procurar cabecalho nas primeiras 20 linhas e marcar `failed` quando nao ha linha importavel |
-| QA-004 | Medio | Status esperado `aguardando_motorista` nao existe no banco/modelo | Regra de negocio evoluiu depois da migration inicial | Pendente; requer migration nao destrutiva |
-| QA-005 | Medio | Tela de upload nao tem estado de carregamento/bloqueio contra clique duplo | Formulario HTML simples sem componente cliente | Pendente |
-| QA-006 | Medio | Sem pagina de saude/diagnostico | Nao ha endpoint dedicado | Pendente |
-| QA-007 | Baixo | Acentos aparecem ausentes em alguns textos da UI | Codigo usa ASCII por padrao | Aceitavel, mas melhora de UX futura |
+```sh
+npm install
+npm run test
+npm run lint
+npm run build
+npm audit --omit=dev
+npm run migrate
+```
 
-## 6. Riscos de deploy
+Resultados:
 
-- Se `Root Directory` nao for `web_vercel`, a Vercel tenta subir a parte Python e quebra.
-- Variaveis obrigatorias: `DATABASE_URL`, `AUTH_SECRET`, `ADMIN_PASSWORD_HASH`.
-- `DATABASE_URL` deve usar SSL; a aplicacao normaliza `postgresql+psycopg2://` para `postgresql://`.
-- As migrations web sao SQL idempotente via `npm run migrate`; elas nao rodam automaticamente no deploy.
-- O arquivo enviado e processado em memoria, sem persistencia local, compativel com serverless.
-- Relatorios sao gerados em memoria e retornados como download.
-
-## 7. Problemas de seguranca
-
-- A aplicacao web possui autenticacao simples por senha unica, sem usuarios individuais.
-- Cookies sao `httpOnly`, `sameSite=lax` e `secure` em producao.
-- Operacoes de banco ficam no servidor; `DATABASE_URL` nao aparece no frontend.
-- SQL usa queries parametrizadas para entradas do usuario.
-- Falta limite explicito de tamanho de upload.
-- Falta auditoria de quem alterou cada careacao.
-- Nao versionar `.env` e `.vercel` esta coberto por `.gitignore`.
-
-## 8. Problemas de usabilidade
-
-- Upload nao mostra progresso.
-- Resultado de importacao pode ficar pouco claro quando nada foi importado.
-- Historico de importacoes existe, mas nao aparece na tela de upload.
-- Tela de careacoes nao tem busca por pedido.
-- Filtros nao sao preservados ao voltar da tela de detalhe.
-- Nao ha confirmacao antes de resolver/cancelar.
-- Nao ha exportacao do resultado filtrado.
-- Dashboard ainda e basico para operacao diaria.
-
-## 9. Ordem recomendada para correcoes
-
-1. Garantir deploy Vercel usando `web_vercel`.
-2. Garantir upload XLSX sem crash e sem depender de filesystem persistente.
-3. Melhorar feedback de importacao para zero linhas/erros.
-4. Adicionar limite de tamanho e tratamento amigavel para arquivo corrompido.
-5. Adicionar endpoint de saude/diagnostico sem vazar secrets.
-6. Adicionar status `aguardando_motorista` com migration nao destrutiva.
-7. Adicionar testes automatizados para importacao web e regras de careacao.
-8. Melhorar UX de upload, dashboard e filtros.
-
-## 10. Tabela de reproducao inicial
-
-| Comando/acao | Resultado | Severidade | Causa provavel | Correcao recomendada |
-| ------------ | --------- | ---------- | -------------- | -------------------- |
-| Acessar Vercel com Root Directory incorreto | 500 `app.main:app` | Bloqueador | Vercel executou Python local | Configurar `Root Directory=web_vercel` |
-| POST `/api/upload` em producao antes da troca do parser | 500 `reading 'trim'` | Critico | Parser XLSX incompativel com planilha | Parser em memoria baseado em ZIP/XML |
-| Upload `CT01_valido_basico.xlsx` antes da busca de cabecalho | `success` com `total_rows=0` | Alto | Cabecalho nao estava na primeira linha reconhecida | Buscar cabecalho nas primeiras linhas e falhar com mensagem clara |
-
+- Testes passaram.
+- TypeScript passou.
+- Build App Router passou.
+- Audit sem vulnerabilidades.
+- Migration SQL aplicada com sucesso.

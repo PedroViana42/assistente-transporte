@@ -2,103 +2,90 @@
 
 Data: 2026-07-09
 
-## Indispensaveis antes de entregar
+## Ja implementado nesta consolidacao
 
-1. Manter `Root Directory = web_vercel` na Vercel.
-   - Impacto: evita que a Vercel tente executar a aplicacao Python local.
-   - Esforco: baixo.
+- Next.js movido para a raiz.
+- Python local, Streamlit, CLI e Alembic removidos do Git.
+- `npm install`, `npm run test`, `npm run lint`, `npm run build` e `npm run migrate` funcionam na raiz.
+- Upload com botao bloqueado, texto de carregamento e spinner.
+- Historico de importacoes na tela de upload.
+- Busca por pedido na tela de careacoes.
+- Filtros por status, motorista e periodo.
+- Paginacao real em careacoes.
+- Preservacao dos filtros ao abrir e voltar do detalhe.
+- Confirmacao antes de resolver ou cancelar.
+- Historico de alteracoes de careacao.
+- Exportacao filtrada de careacoes.
+- Testes unitarios web com Vitest.
 
-2. Confirmar as variaveis de ambiente em Production.
+## Indispensaveis antes de entregar ao cliente
+
+1. Confirmar variaveis de ambiente em Production.
    - `DATABASE_URL`
    - `AUTH_SECRET`
    - `ADMIN_PASSWORD_HASH`
-   - Impacto: sem isso login e banco falham.
-   - Esforco: baixo.
 
-3. Executar `npm run migrate` antes/apos deploy quando houver mudanca de schema.
-   - Impacto: garante tabelas, indices e constraints no Neon.
-   - Esforco: baixo.
+2. Conferir a configuracao da Vercel.
+   - Root Directory deve ser vazio/raiz.
+   - Framework Preset deve ser Next.js.
 
-4. Validar upload real com uma planilha do cliente.
-   - Impacto: confirma nomes de colunas e estrutura das abas.
-   - Esforco: baixo.
+3. Rodar health check apos deploy.
+   - `/api/health`
 
-5. Trocar a senha temporaria de teste por uma senha final do cliente.
-   - Impacto: reduz risco de acesso indevido.
-   - Esforco: baixo.
+4. Testar com uma planilha real do cliente em ambiente controlado.
+   - Confirmar cabecalhos.
+   - Confirmar tempo de importacao.
+   - Confirmar erros por linha.
+
+5. Trocar senha temporaria por senha final do cliente.
+   - Gerar hash com `npm run hash-password`.
 
 ## Recomendadas para curto prazo
 
-1. Melhorar a tela de upload com estado de carregamento.
-   - Botao desabilitado durante envio.
-   - Texto "Importando, aguarde".
-   - Evita clique duplicado.
-   - Esforco: baixo/medio, exige componente client.
+1. Configurar testes end-to-end com Playwright.
+   - Login.
+   - Upload.
+   - Busca por pedido.
+   - Edicao de careacao.
+   - Exportacao.
 
-2. Mostrar historico de importacoes recentes na propria tela de upload.
-   - Ajuda o usuario a confirmar que o arquivo foi processado.
-   - Esforco: baixo.
+2. Criar banco de teste separado.
+   - Permite testar duplicidade, erros e historico sem tocar no Neon de producao.
 
-3. Adicionar busca por numero do pedido na tela de careacoes.
-   - Hoje a busca por pedido fica em `/pedidos`.
-   - Esforco: baixo.
+3. Exportar erros de importacao em Excel.
+   - Ajuda o cliente a corrigir linhas invalidas.
 
-4. Preservar filtros ao voltar do detalhe da careacao.
-   - Melhora operacao diaria.
-   - Esforco: medio.
-
-5. Adicionar exportacao do resultado filtrado de careacoes.
-   - Hoje o relatorio e geral por tipo.
-   - Esforco: medio.
-
-6. Adicionar pagina de diagnostico administrativa.
-   - Pode consumir `/api/health`.
-   - Nao deve mostrar secrets.
-   - Esforco: baixo.
-
-7. Criar testes automatizados para o app Next.js.
-   - Unitarios para status, upload e parser XLSX.
-   - Integracao com banco de teste.
-   - Esforco: medio.
+4. Melhorar observabilidade.
+   - Registrar duracao de importacao.
+   - Registrar `import_batch_id` em logs.
+   - Evitar dados sensiveis em logs.
 
 ## Melhorias futuras
 
-1. Historico de alteracoes de careacao.
-   - Registrar quem alterou, status anterior, status novo e data.
-   - Exige nova tabela.
-   - Esforco: medio/alto.
+1. Usuarios individuais e permissoes.
+   - Hoje existe senha unica administrativa.
 
-2. Usuarios reais e permissoes.
-   - Hoje existe senha unica.
-   - Cliente pode precisar separar operador/admin.
-   - Esforco: alto.
+2. Processamento assincrono de arquivos grandes.
+   - Vercel serverless pode nao suportar cargas muito grandes em uma unica requisicao.
+   - Considerar fila, worker externo ou servico dedicado.
 
-3. Processamento assincrono de arquivos grandes.
-   - Vercel serverless tem limite de tempo/memoria.
-   - Para planilhas grandes, considerar fila ou worker externo.
-   - Esforco: alto.
+3. Auditoria com usuario real.
+   - `careacao_history` ja esta preparado com `actor`, mas ainda usa `admin`.
 
-4. Preview dos erros de importacao com download em Excel.
-   - Facilita correcao pelo cliente.
-   - Esforco: medio.
+4. Template oficial de planilha.
+   - Reduz erros de cabecalho e modelo.
 
-5. Observabilidade estruturada.
-   - Logs com `import_batch_id`, status e duracao.
-   - Sem dados sensiveis.
-   - Esforco: medio.
+5. Dashboard operacional mais completo.
+   - Indicadores por periodo.
+   - Casos antigos.
+   - Total por motorista.
 
-6. Separar repositorios ou pacotes.
-   - Um repo para app web e outro para automacao local.
-   - Reduz confusao de deploy.
-   - Esforco: medio.
+## Fora do escopo atual
 
-## Funcionalidades fora do escopo atual
-
-1. WhatsApp.
-2. OCR.
-3. IA para leitura de documentos.
-4. Portal publico para motoristas.
-5. Multiempresa/multitenancy.
-6. Pagamentos ou cobranca automatica.
-7. Armazenamento permanente de arquivos enviados.
-
+- WhatsApp.
+- OCR.
+- IA para leitura de documentos.
+- Portal publico para motoristas.
+- Multiempresa/multitenancy.
+- Pagamentos ou cobranca automatica.
+- Armazenamento permanente de arquivos enviados.
