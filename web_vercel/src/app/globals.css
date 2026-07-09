@@ -203,6 +203,11 @@ th {
   color: #245ea8;
 }
 
+.badge.aguardando_motorista {
+  background: #f0e8ff;
+  color: #6941c6;
+}
+
 .badge.resolvido {
   background: #ddf5e7;
   color: #167347;

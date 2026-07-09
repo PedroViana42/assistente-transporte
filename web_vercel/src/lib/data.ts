@@ -69,7 +69,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     SELECT
       (SELECT count(*) FROM orders)::text AS orders_total,
       (SELECT count(*) FROM drivers)::text AS drivers_total,
-      (SELECT count(*) FROM careacao_cases WHERE status IN ('pendente', 'em_tratativa', 'respondido'))::text AS open_cases_total,
+      (SELECT count(*) FROM careacao_cases WHERE status IN ('pendente', 'em_tratativa', 'aguardando_motorista', 'respondido'))::text AS open_cases_total,
       (SELECT count(*) FROM careacao_cases WHERE amount > 0)::text AS cases_with_amount_total,
       (SELECT COALESCE(sum(amount), 0) FROM careacao_cases)::text AS total_amount
   `);
@@ -99,7 +99,7 @@ export async function getRecentOpenCases(): Promise<CareacaoCase[]> {
     FROM careacao_cases c
     JOIN orders o ON o.id = c.order_id
     JOIN drivers d ON d.id = c.driver_id
-    WHERE c.status IN ('pendente', 'em_tratativa', 'respondido')
+    WHERE c.status IN ('pendente', 'em_tratativa', 'aguardando_motorista', 'respondido')
     ORDER BY c.updated_at DESC
     LIMIT 8
   `);

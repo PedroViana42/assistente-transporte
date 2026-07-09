@@ -5,6 +5,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
+const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;
+
 export async function POST(request: Request): Promise<Response> {
   const session = await readSession();
   if (!session) {
@@ -18,10 +20,18 @@ export async function POST(request: Request): Promise<Response> {
     return Response.redirect(new URL("/upload?erro=arquivo", request.url), 303);
   }
 
+  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+    return Response.redirect(new URL("/upload?erro=tamanho", request.url), 303);
+  }
+
   if (!file.name.toLowerCase().endsWith(".xlsx")) {
     return Response.redirect(new URL("/upload?erro=formato", request.url), 303);
   }
 
-  const result = await importExcelFile(file.name, await file.arrayBuffer());
-  return Response.redirect(new URL(`/upload?batch=${result.batchId}`, request.url), 303);
+  try {
+    const result = await importExcelFile(file.name, await file.arrayBuffer());
+    return Response.redirect(new URL(`/upload?batch=${result.batchId}`, request.url), 303);
+  } catch {
+    return Response.redirect(new URL("/upload?erro=processamento", request.url), 303);
+  }
 }

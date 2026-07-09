@@ -76,3 +76,10 @@ CREATE INDEX IF NOT EXISTS ix_careacao_cases_status ON careacao_cases(status);
 CREATE INDEX IF NOT EXISTS ix_careacao_cases_opened_at ON careacao_cases(opened_at);
 CREATE INDEX IF NOT EXISTS ix_import_batches_started_at ON import_batches(started_at);
 CREATE INDEX IF NOT EXISTS ix_import_errors_import_batch_id ON import_errors(import_batch_id);
+
+ALTER TABLE careacao_cases
+  DROP CONSTRAINT IF EXISTS ck_careacao_cases_status;
+
+ALTER TABLE careacao_cases
+  ADD CONSTRAINT ck_careacao_cases_status
+  CHECK (status IN ('pendente', 'em_tratativa', 'aguardando_motorista', 'respondido', 'resolvido', 'cancelado'));

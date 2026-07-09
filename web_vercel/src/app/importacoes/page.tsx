@@ -37,6 +37,7 @@ export default async function ImportacoesPage({
                 <th>Duplicados</th>
                 <th>Erros</th>
                 <th>Inicio</th>
+                <th>Mensagem</th>
               </tr>
             </thead>
             <tbody>
@@ -52,11 +53,12 @@ export default async function ImportacoesPage({
                   <td>{batch.skipped_rows}</td>
                   <td>{batch.error_rows}</td>
                   <td>{formatDate(batch.started_at)}</td>
+                  <td>{batch.error_message ?? ""}</td>
                 </tr>
               ))}
               {!batches.length ? (
                 <tr>
-                  <td colSpan={8} className="muted">
+                  <td colSpan={9} className="muted">
                     Nenhuma importacao registrada.
                   </td>
                 </tr>

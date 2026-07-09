@@ -71,7 +71,7 @@ class CareacaoCase(Base):
     __tablename__ = "careacao_cases"
     __table_args__ = (
         CheckConstraint(
-            "status in ('pendente', 'em_tratativa', 'respondido', 'resolvido', 'cancelado')",
+            "status in ('pendente', 'em_tratativa', 'aguardando_motorista', 'respondido', 'resolvido', 'cancelado')",
             name="ck_careacao_cases_status",
         ),
     )

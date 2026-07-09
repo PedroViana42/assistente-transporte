@@ -25,9 +25,14 @@ export default async function UploadPage({
           <form className="form" action="/api/upload" method="POST" encType="multipart/form-data">
             {params.erro === "arquivo" ? <div className="error">Selecione uma planilha.</div> : null}
             {params.erro === "formato" ? <div className="error">Envie um arquivo .xlsx.</div> : null}
+            {params.erro === "tamanho" ? <div className="error">Envie uma planilha de ate 8 MB.</div> : null}
+            {params.erro === "processamento" ? (
+              <div className="error">Nao foi possivel ler a planilha. Confira se o arquivo nao esta corrompido.</div>
+            ) : null}
             <div className="field">
               <label htmlFor="file">Planilha .xlsx</label>
               <input id="file" name="file" type="file" accept=".xlsx" required />
+              <span className="muted">Formato aceito: .xlsx ate 8 MB.</span>
             </div>
             <div>
               <button className="button" type="submit">
@@ -68,6 +73,7 @@ export default async function UploadPage({
               <strong>{batch.error_rows}</strong>
             </div>
           </div>
+          {batch.error_message ? <div className="error">{batch.error_message}</div> : null}
         </section>
       ) : null}
     </>

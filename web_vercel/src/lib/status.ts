@@ -1,6 +1,7 @@
 export const CAREACAO_STATUSES = [
   "pendente",
   "em_tratativa",
+  "aguardando_motorista",
   "respondido",
   "resolvido",
   "cancelado"
@@ -12,6 +13,7 @@ export function statusLabel(status: string): string {
   const labels: Record<string, string> = {
     pendente: "Pendente",
     em_tratativa: "Em tratativa",
+    aguardando_motorista: "Aguardando motorista",
     respondido: "Respondido",
     resolvido: "Resolvido",
     cancelado: "Cancelado"

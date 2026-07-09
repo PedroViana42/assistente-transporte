@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { clearSessionCookie, createSession, requireSession, setSessionCookie, verifyPassword } from "@/lib/auth";
 import { getPool } from "@/lib/db";
-import { isClosedStatus } from "@/lib/status";
+import { CAREACAO_STATUSES, isClosedStatus } from "@/lib/status";
 
 function asText(value: FormDataEntryValue | null): string {
   return typeof value === "string" ? value.trim() : "";
@@ -23,6 +23,11 @@ function parseCustomerFault(value: string): boolean | null {
   if (value === "sim") return true;
   if (value === "nao") return false;
   return null;
+}
+
+function parseStatus(value: string): string {
+  if ((CAREACAO_STATUSES as readonly string[]).includes(value)) return value;
+  throw new Error("Status da careacao invalido.");
 }
 
 export async function loginAction(formData: FormData): Promise<void> {
@@ -100,7 +105,7 @@ export async function updateCareacaoAction(formData: FormData): Promise<void> {
   await requireSession();
 
   const id = Number(asText(formData.get("id")));
-  const status = asText(formData.get("status"));
+  const status = parseStatus(asText(formData.get("status")));
   const amount = parseAmount(asText(formData.get("amount")));
   const isCustomerFault = parseCustomerFault(asText(formData.get("is_customer_fault")));
   const faultReason = asText(formData.get("fault_reason")) || null;
