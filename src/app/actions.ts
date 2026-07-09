@@ -280,7 +280,7 @@ async function syncOrderFromCareacao(client: PoolClient, current: CareacaoSnapsh
         has_careacao = true,
         is_resolved = $2,
         has_discount = $3,
-        discount_value = CASE WHEN $3 THEN $4 ELSE NULL END,
+        discount_value = CASE WHEN $3 THEN $4::numeric ELSE NULL END,
         internal_note = $5,
         updated_at = now()
       WHERE id = $1
