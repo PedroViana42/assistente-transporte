@@ -12,7 +12,13 @@ export async function GET(request: Request): Promise<Response> {
 
   const url = new URL(request.url);
   const type = url.searchParams.get("tipo") ?? "completo";
-  const buffer = await buildReportWorkbook(type);
+  const buffer = await buildReportWorkbook(type, {
+    status: url.searchParams.get("status") ?? undefined,
+    driver: url.searchParams.get("motorista") ?? undefined,
+    startDate: url.searchParams.get("inicio") ?? undefined,
+    endDate: url.searchParams.get("fim") ?? undefined,
+    order: url.searchParams.get("pedido") ?? undefined
+  });
   const stamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
 
   return new Response(new Uint8Array(buffer), {

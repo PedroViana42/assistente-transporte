@@ -63,6 +63,18 @@ CREATE TABLE IF NOT EXISTS import_errors (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS careacao_history (
+  id SERIAL PRIMARY KEY,
+  careacao_id INTEGER NOT NULL REFERENCES careacao_cases(id) ON DELETE CASCADE,
+  action VARCHAR(50) NOT NULL,
+  previous_status VARCHAR(50),
+  new_status VARCHAR(50),
+  previous_values_json JSONB,
+  new_values_json JSONB,
+  actor VARCHAR(100),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 ALTER TABLE careacao_cases
   ADD COLUMN IF NOT EXISTS amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS is_customer_fault BOOLEAN,
@@ -70,12 +82,15 @@ ALTER TABLE careacao_cases
 
 CREATE INDEX IF NOT EXISTS ix_orders_order_number ON orders(order_number);
 CREATE INDEX IF NOT EXISTS ix_orders_driver_id ON orders(driver_id);
+CREATE INDEX IF NOT EXISTS ix_orders_created_datetime ON orders(created_datetime);
 CREATE INDEX IF NOT EXISTS ix_careacao_cases_order_id ON careacao_cases(order_id);
 CREATE INDEX IF NOT EXISTS ix_careacao_cases_driver_id ON careacao_cases(driver_id);
 CREATE INDEX IF NOT EXISTS ix_careacao_cases_status ON careacao_cases(status);
 CREATE INDEX IF NOT EXISTS ix_careacao_cases_opened_at ON careacao_cases(opened_at);
 CREATE INDEX IF NOT EXISTS ix_import_batches_started_at ON import_batches(started_at);
 CREATE INDEX IF NOT EXISTS ix_import_errors_import_batch_id ON import_errors(import_batch_id);
+CREATE INDEX IF NOT EXISTS ix_careacao_history_careacao_id ON careacao_history(careacao_id);
+CREATE INDEX IF NOT EXISTS ix_careacao_history_created_at ON careacao_history(created_at);
 
 ALTER TABLE careacao_cases
   DROP CONSTRAINT IF EXISTS ck_careacao_cases_status;

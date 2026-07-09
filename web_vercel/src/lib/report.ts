@@ -1,11 +1,15 @@
 import ExcelJS from "exceljs";
+import { buildCareacaoWhereClause, type CareacaoFilters } from "./careacao-filters";
 import { query } from "./db";
 
 type ReportType = "completo" | "pedidos" | "resumo_motorista" | "careacoes";
 
 type ReportRow = Record<string, string | number | boolean | null>;
 
-export async function buildReportWorkbook(reportType: string): Promise<Buffer> {
+export async function buildReportWorkbook(
+  reportType: string,
+  filters: CareacaoFilters = {}
+): Promise<Buffer> {
   const type = normalizeReportType(reportType);
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Assistente de Transporte";
@@ -20,7 +24,7 @@ export async function buildReportWorkbook(reportType: string): Promise<Buffer> {
   }
 
   if (type === "completo" || type === "careacoes") {
-    addWorksheet(workbook, "Careacoes", await getCareacaoRows());
+    addWorksheet(workbook, "Careacoes", await getCareacaoRows(filters));
   }
 
   return Buffer.from(await workbook.xlsx.writeBuffer());
@@ -54,6 +58,17 @@ function addWorksheet(workbook: ExcelJS.Workbook, name: string, rows: ReportRow[
 
   worksheet.getRow(1).font = { bold: true };
   worksheet.views = [{ state: "frozen", ySplit: 1 }];
+  worksheet.autoFilter = {
+    from: "A1",
+    to: `${worksheet.getColumn(columns.length).letter}1`
+  };
+
+  columns.forEach((column, index) => {
+    const normalized = column.toLowerCase();
+    if (normalized.includes("valor")) {
+      worksheet.getColumn(index + 1).numFmt = '"R$" #,##0.00';
+    }
+  });
 }
 
 async function getOrdersRows(): Promise<ReportRow[]> {
@@ -66,7 +81,7 @@ async function getOrdersRows(): Promise<ReportRow[]> {
       CASE WHEN c.id IS NULL THEN false ELSE true END AS "Careacao",
       CASE WHEN c.status = 'resolvido' THEN true ELSE false END AS "Resolvido",
       CASE WHEN c.amount > 0 THEN true ELSE false END AS "Desconto",
-      c.amount::text AS "Valor desconto",
+      c.amount::float AS "Valor desconto",
       CASE
         WHEN c.is_customer_fault IS TRUE THEN 'Sim'
         WHEN c.is_customer_fault IS FALSE THEN 'Nao'
@@ -92,7 +107,7 @@ async function getDriverSummaryRows(): Promise<ReportRow[]> {
       sum(CASE WHEN c.id IS NULL THEN 0 ELSE 1 END)::int AS "Total com careacao",
       sum(CASE WHEN c.status = 'resolvido' THEN 1 ELSE 0 END)::int AS "Total resolvido",
       sum(CASE WHEN c.amount > 0 THEN 1 ELSE 0 END)::int AS "Total com desconto",
-      coalesce(sum(c.amount), 0)::text AS "Valor total de desconto"
+      coalesce(sum(c.amount), 0)::float AS "Valor total de desconto"
     FROM drivers d
     JOIN orders o ON o.driver_id = d.id
     LEFT JOIN careacao_cases c ON c.order_id = o.id
@@ -103,13 +118,18 @@ async function getDriverSummaryRows(): Promise<ReportRow[]> {
   return result.rows;
 }
 
-async function getCareacaoRows(): Promise<ReportRow[]> {
-  const result = await query<ReportRow>(`
+async function getCareacaoRows(filters: CareacaoFilters): Promise<ReportRow[]> {
+  const { where, params } = buildCareacaoWhereClause(filters);
+  const result = await query<ReportRow>(
+    `
     SELECT
       o.order_number AS "Numero do pedido",
       d.name AS "Motorista",
       c.status AS "Status",
-      c.amount::text AS "Valor",
+      to_char(c.opened_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS "Data de abertura",
+      to_char(c.updated_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS "Ultima atualizacao",
+      to_char(c.closed_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS "Data de resolucao",
+      c.amount::float AS "Valor",
       CASE
         WHEN c.is_customer_fault IS TRUE THEN 'Sim'
         WHEN c.is_customer_fault IS FALSE THEN 'Nao'
@@ -117,15 +137,15 @@ async function getCareacaoRows(): Promise<ReportRow[]> {
       END AS "Culpa do cliente",
       c.fault_reason AS "Motivo",
       c.internal_note AS "Observacao interna",
-      c.driver_response AS "Resposta do motorista",
-      c.opened_at::text AS "Aberta em",
-      c.updated_at::text AS "Atualizada em",
-      c.closed_at::text AS "Fechada em"
+      c.driver_response AS "Resposta do motorista"
     FROM careacao_cases c
     JOIN orders o ON o.id = c.order_id
     JOIN drivers d ON d.id = c.driver_id
+    ${where}
     ORDER BY c.updated_at DESC, c.id DESC
-  `);
+  `,
+    params
+  );
 
   return result.rows;
 }

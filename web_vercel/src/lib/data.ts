@@ -1,4 +1,5 @@
 import { query } from "./db";
+import { buildCareacaoWhereClause, careacaoOrderBy, type CareacaoFilters } from "./careacao-filters";
 
 export type DashboardStats = {
   orders_total: string;
@@ -41,6 +42,26 @@ export type CareacaoCase = {
   closed_at: string | null;
   created_datetime: string | null;
   delivery_datetime: string | null;
+};
+
+export type CareacaoListResult = {
+  rows: CareacaoCase[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+export type CareacaoHistoryRow = {
+  id: number;
+  careacao_id: number;
+  action: string;
+  previous_status: string | null;
+  new_status: string | null;
+  previous_values_json: Record<string, unknown> | null;
+  new_values_json: Record<string, unknown> | null;
+  actor: string | null;
+  created_at: string;
 };
 
 export type ImportBatch = {
@@ -140,36 +161,30 @@ export async function searchOrders(term: string): Promise<OrderSummary[]> {
   return result.rows;
 }
 
-export async function listCareacaoCases(filters: {
-  status?: string;
-  driver?: string;
-  startDate?: string;
-  endDate?: string;
-}): Promise<CareacaoCase[]> {
-  const clauses: string[] = [];
-  const params: unknown[] = [];
-
-  if (filters.status && filters.status !== "todos") {
-    params.push(filters.status);
-    clauses.push(`c.status = $${params.length}`);
+export async function listCareacaoCases(
+  filters: CareacaoFilters & {
+    sort?: string;
+    page?: number;
+    pageSize?: number;
   }
+): Promise<CareacaoListResult> {
+  const page = Math.max(1, Number(filters.page ?? 1));
+  const pageSize = Math.min(100, Math.max(10, Number(filters.pageSize ?? 25)));
+  const offset = (page - 1) * pageSize;
+  const { where, params } = buildCareacaoWhereClause(filters);
+  const orderBy = careacaoOrderBy(filters.sort);
 
-  if (filters.driver) {
-    params.push(`%${filters.driver}%`);
-    clauses.push(`d.name ILIKE $${params.length}`);
-  }
-
-  if (filters.startDate) {
-    params.push(filters.startDate);
-    clauses.push(`c.opened_at::date >= $${params.length}::date`);
-  }
-
-  if (filters.endDate) {
-    params.push(filters.endDate);
-    clauses.push(`c.opened_at::date <= $${params.length}::date`);
-  }
-
-  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  const totalResult = await query<{ total: string }>(
+    `
+      SELECT count(*)::text AS total
+      FROM careacao_cases c
+      JOIN orders o ON o.id = c.order_id
+      JOIN drivers d ON d.id = c.driver_id
+      ${where}
+    `,
+    params
+  );
+  const total = Number(totalResult.rows[0]?.total ?? 0);
 
   const result = await query<CareacaoCase>(
     `
@@ -194,13 +209,20 @@ export async function listCareacaoCases(filters: {
       JOIN orders o ON o.id = c.order_id
       JOIN drivers d ON d.id = c.driver_id
       ${where}
-      ORDER BY c.updated_at DESC
-      LIMIT 100
+      ORDER BY ${orderBy}
+      LIMIT $${params.length + 1}
+      OFFSET $${params.length + 2}
     `,
-    params
+    [...params, pageSize, offset]
   );
 
-  return result.rows;
+  return {
+    rows: result.rows,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.max(1, Math.ceil(total / pageSize))
+  };
 }
 
 export async function getCareacaoCase(id: number): Promise<CareacaoCase | null> {
@@ -232,6 +254,29 @@ export async function getCareacaoCase(id: number): Promise<CareacaoCase | null> 
   );
 
   return result.rows[0] ?? null;
+}
+
+export async function getCareacaoHistory(careacaoId: number): Promise<CareacaoHistoryRow[]> {
+  const result = await query<CareacaoHistoryRow>(
+    `
+      SELECT
+        id,
+        careacao_id,
+        action,
+        previous_status,
+        new_status,
+        previous_values_json,
+        new_values_json,
+        actor,
+        created_at::text
+      FROM careacao_history
+      WHERE careacao_id = $1
+      ORDER BY created_at DESC, id DESC
+    `,
+    [careacaoId]
+  );
+
+  return result.rows;
 }
 
 export async function listImportBatches(limit = 20): Promise<ImportBatch[]> {

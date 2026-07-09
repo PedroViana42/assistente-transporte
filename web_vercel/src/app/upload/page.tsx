@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/auth";
-import { getImportBatch } from "@/lib/data";
+import { getImportBatch, listImportBatches } from "@/lib/data";
+import { formatDate } from "@/lib/format";
 import { UploadForm } from "./UploadForm";
 
 export const maxDuration = 60;
@@ -13,6 +14,7 @@ export default async function UploadPage({
   await requireSession();
   const params = await searchParams;
   const batch = params.batch ? await getImportBatch(Number(params.batch)) : null;
+  const recentBatches = await listImportBatches(8);
 
   return (
     <>
@@ -60,6 +62,58 @@ export default async function UploadPage({
           {batch.error_message ? <div className="error">{batch.error_message}</div> : null}
         </section>
       ) : null}
+
+      <section className="panel">
+        <div className="panel-header">
+          <h2>Ultimas importacoes</h2>
+          <Link className="button secondary" href="/importacoes">
+            Ver historico completo
+          </Link>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Arquivo</th>
+                <th>Data</th>
+                <th>Status</th>
+                <th>Total</th>
+                <th>Importados</th>
+                <th>Duplicados</th>
+                <th>Erros</th>
+                <th>Mensagem</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentBatches.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.filename}</td>
+                  <td>{formatDate(item.started_at)}</td>
+                  <td>{item.status}</td>
+                  <td>{item.total_rows}</td>
+                  <td>{item.imported_rows}</td>
+                  <td>{item.skipped_rows}</td>
+                  <td>{item.error_rows}</td>
+                  <td>{item.error_message ?? ""}</td>
+                  <td>
+                    <Link className="button secondary" href={`/importacoes?batch=${item.id}`}>
+                      Detalhes
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+              {!recentBatches.length ? (
+                <tr>
+                  <td colSpan={9} className="muted">
+                    Nenhuma importacao registrada ainda. Envie uma planilha .xlsx de ate 8 MB para comecar.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </>
   );
 }
