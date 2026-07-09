@@ -44,6 +44,7 @@ export async function readXlsxSheets(buffer: Buffer): Promise<XlsxSheet[]> {
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "",
+    removeNSPrefix: true,
     trimValues: false
   });
 
@@ -68,7 +69,7 @@ export async function readXlsxSheets(buffer: Buffer): Promise<XlsxSheet[]> {
   const sheets: XlsxSheet[] = [];
   for (const sheet of sheetNodes) {
     const name = asString(sheet.name) || "Planilha";
-    const relationId = asString(sheet["r:id"]);
+    const relationId = asString(sheet["r:id"]) || asString(sheet.id) || asString(sheet.Id);
     const path = relationshipById.get(relationId);
     if (!path) continue;
 
