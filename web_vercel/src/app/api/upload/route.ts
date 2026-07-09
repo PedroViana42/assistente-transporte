@@ -1,11 +1,10 @@
 import { readSession } from "@/lib/auth";
 import { importExcelFile } from "@/lib/importer";
+import { validateImportFile } from "@/lib/import/import-validator";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
-
-const MAX_UPLOAD_SIZE_BYTES = 8 * 1024 * 1024;
 
 export async function POST(request: Request): Promise<Response> {
   const session = await readSession();
@@ -16,16 +15,13 @@ export async function POST(request: Request): Promise<Response> {
   const formData = await request.formData();
   const file = formData.get("file");
 
-  if (!(file instanceof File) || file.size === 0) {
+  if (!(file instanceof File)) {
     return Response.redirect(new URL("/upload?erro=arquivo", request.url), 303);
   }
 
-  if (file.size > MAX_UPLOAD_SIZE_BYTES) {
-    return Response.redirect(new URL("/upload?erro=tamanho", request.url), 303);
-  }
-
-  if (!file.name.toLowerCase().endsWith(".xlsx")) {
-    return Response.redirect(new URL("/upload?erro=formato", request.url), 303);
+  const validation = validateImportFile(file.name, file.size);
+  if (!validation.ok) {
+    return Response.redirect(new URL(`/upload?erro=${validation.code}`, request.url), 303);
   }
 
   try {
