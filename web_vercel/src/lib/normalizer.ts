@@ -5,7 +5,7 @@ export function stripAccents(value: string): string {
 export function normalizeHeader(value: unknown): string {
   return stripAccents(String(value ?? ""))
     .toLowerCase()
-    .replace(/[?:;.,()[\]{}_\-/\\]+/g, " ")
+    .replace(/[?:;.,()[\]{}_\-/\\º°#]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }

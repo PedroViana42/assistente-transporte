@@ -24,6 +24,11 @@ type RawRow = Record<string, unknown>;
 type MappedRow = Partial<Record<CanonicalColumn, unknown>>;
 type XlsxSheet = { sheet: string; data: unknown[][] };
 type XmlNode = Record<string, unknown>;
+type HeaderMatch = {
+  headerIndex: number;
+  headers: unknown[];
+  columnMap: (CanonicalColumn | null)[];
+};
 
 export async function importExcelFile(fileName: string, buffer: ArrayBuffer): Promise<ImportResult> {
   const sheets = await readXlsxSheets(Buffer.from(new Uint8Array(buffer)));
@@ -56,13 +61,12 @@ export async function importExcelFile(fileName: string, buffer: ArrayBuffer): Pr
       const rows = cleanRows(sheet.data as unknown[][]);
       if (!rows.length) continue;
 
-      const headers = rows[0];
-      const columnMap = headers.map((header) => mapHeader(header));
-      if (!columnMap.includes("order_number")) continue;
+      const headerMatch = findHeaderRow(rows);
+      if (!headerMatch) continue;
 
-      for (let index = 1; index < rows.length; index += 1) {
-        const rawRow = buildRawRow(headers, rows[index], sheet.sheet);
-        const mappedRow = buildMappedRow(columnMap, rows[index]);
+      for (let index = headerMatch.headerIndex + 1; index < rows.length; index += 1) {
+        const rawRow = buildRawRow(headerMatch.headers, rows[index], sheet.sheet);
+        const mappedRow = buildMappedRow(headerMatch.columnMap, rows[index]);
         if (isEmptyMappedRow(mappedRow)) continue;
 
         result.totalRows += 1;
@@ -92,6 +96,12 @@ export async function importExcelFile(fileName: string, buffer: ArrayBuffer): Pr
     }
 
     result.status = result.errorRows ? "partial_success" : "success";
+    const errorMessage =
+      result.totalRows === 0
+        ? "Nenhuma linha importavel encontrada. Confira se a planilha tem coluna de numero do pedido e motorista."
+        : null;
+    if (errorMessage) result.status = "failed";
+
     await client.query(
       `
         UPDATE import_batches
@@ -101,7 +111,8 @@ export async function importExcelFile(fileName: string, buffer: ArrayBuffer): Pr
           imported_rows = $4,
           skipped_rows = $5,
           error_rows = $6,
-          finished_at = now()
+          finished_at = now(),
+          error_message = $7
         WHERE id = $1
       `,
       [
@@ -110,7 +121,8 @@ export async function importExcelFile(fileName: string, buffer: ArrayBuffer): Pr
         result.totalRows,
         result.importedRows,
         result.skippedRows,
-        result.errorRows
+        result.errorRows,
+        errorMessage
       ]
     );
     await client.query("COMMIT");
@@ -143,6 +155,28 @@ function cleanRows(rows: unknown[][]): unknown[][] {
   return rows.filter((row) =>
     row.some((value) => value !== null && value !== undefined && String(value).trim() !== "")
   );
+}
+
+function findHeaderRow(rows: unknown[][]): HeaderMatch | null {
+  const searchLimit = Math.min(rows.length, 20);
+
+  for (let index = 0; index < searchLimit; index += 1) {
+    const headers = rows[index];
+    const columnMap = headers.map((header) => mapHeader(header));
+    if (columnMap.includes("order_number") && columnMap.includes("driver_name")) {
+      return { headerIndex: index, headers, columnMap };
+    }
+  }
+
+  for (let index = 0; index < searchLimit; index += 1) {
+    const headers = rows[index];
+    const columnMap = headers.map((header) => mapHeader(header));
+    if (columnMap.includes("order_number")) {
+      return { headerIndex: index, headers, columnMap };
+    }
+  }
+
+  return null;
 }
 
 async function readXlsxSheets(buffer: Buffer): Promise<XlsxSheet[]> {

@@ -15,14 +15,22 @@ const COLUMN_ALIASES: Record<CanonicalColumn, string[]> = {
     "n mero pedido jms",
     "numero de pedido",
     "n mero de pedido",
+    "numero pedido",
+    "n pedido",
+    "pedido jms",
+    "cod pedido",
+    "codigo pedido",
     "pedido",
     "order number"
   ],
   driver_name: [
     "responsavel pela entrega",
     "respons vel pela entrega",
+    "responsavel entrega",
     "entregador",
     "motorista",
+    "nome motorista",
+    "nome entregador",
     "driver",
     "driver name"
   ],
