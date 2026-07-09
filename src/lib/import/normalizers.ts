@@ -111,6 +111,14 @@ export function normalizeDecimal(value: unknown): string | null {
   const lastDot = text.lastIndexOf(".");
   if (lastComma >= 0 && lastDot >= 0) {
     text = lastComma > lastDot ? text.replace(/\./g, "").replace(",", ".") : text.replace(/,/g, "");
+  } else if (text.includes(",") && text.split(",").length > 2) {
+    text = text.replace(/,/g, "");
+  } else if (text.includes(".") && text.split(".").length > 2) {
+    text = text.replace(/\./g, "");
+  } else if (lastComma >= 0) {
+    text = normalizeSingleDecimalSeparator(text, ",");
+  } else if (lastDot >= 0) {
+    text = normalizeSingleDecimalSeparator(text, ".");
   } else {
     text = text.replace(",", ".");
   }
@@ -118,6 +126,17 @@ export function normalizeDecimal(value: unknown): string | null {
   const number = Number(text);
   if (!Number.isFinite(number)) throw new Error(`Decimal invalido: ${String(value)}`);
   return text;
+}
+
+function normalizeSingleDecimalSeparator(value: string, separator: "," | "."): string {
+  const [integer, fraction = ""] = value.split(separator);
+  if (!fraction) return integer;
+
+  if (fraction.length === 3 && integer.replace(/^[+-]/, "").length <= 3) {
+    return `${integer}${fraction}`;
+  }
+
+  return separator === "," ? `${integer}.${fraction}` : value;
 }
 
 function trimNumericText(value: string): string {

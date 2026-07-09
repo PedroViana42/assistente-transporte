@@ -82,7 +82,7 @@ export default async function OrdersPage({
                           id={`amount-${order.id}`}
                           name="amount"
                           inputMode="decimal"
-                          placeholder="0,00"
+                          placeholder="0,00 ou 0.00"
                           required
                         />
                       </div>

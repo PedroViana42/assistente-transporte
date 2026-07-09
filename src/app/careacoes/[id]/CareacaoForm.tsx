@@ -62,7 +62,13 @@ export function CareacaoForm({ item }: { item: CareacaoFormItem }) {
           </div>
           <div className="field">
             <label htmlFor="amount">Valor da careacao</label>
-            <input id="amount" name="amount" defaultValue={item.amount.replace(".", ",")} inputMode="decimal" />
+            <input
+              id="amount"
+              name="amount"
+              defaultValue={item.amount.replace(".", ",")}
+              inputMode="decimal"
+              placeholder="0,00 ou 0.00"
+            />
           </div>
           <div className="field">
             <label htmlFor="is_customer_fault">Foi culpa do cliente?</label>

@@ -51,8 +51,15 @@ describe("normalizers", () => {
 
   it("normalizes decimal values with comma or point", () => {
     expect(normalizeDecimal("10,50")).toBe("10.50");
+    expect(normalizeDecimal("10.50")).toBe("10.50");
+    expect(normalizeDecimal("R$ 10,50")).toBe("10.50");
+    expect(normalizeDecimal("R$ 10.50")).toBe("10.50");
     expect(normalizeDecimal("1.234,56")).toBe("1234.56");
     expect(normalizeDecimal("1,234.56")).toBe("1234.56");
+    expect(normalizeDecimal("1.234")).toBe("1234");
+    expect(normalizeDecimal("1,234")).toBe("1234");
+    expect(normalizeDecimal("1.234.567,89")).toBe("1234567.89");
+    expect(normalizeDecimal("1,234,567.89")).toBe("1234567.89");
     expect(normalizeDecimal("")).toBeNull();
   });
 });
