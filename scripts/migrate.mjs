@@ -31,7 +31,7 @@ const pool = new pg.Pool({
 });
 
 try {
-  const sql = await readFile(join(__dirname, "..", "sql", "001_web_manual_careacao.sql"), "utf8");
+  const sql = await readFile(join(__dirname, "..", "migrations", "001_web_manual_careacao.sql"), "utf8");
   await pool.query(sql);
   console.log("Migracao web aplicada com sucesso.");
 } finally {

@@ -1,9 +1,0 @@
-.venv
-.pytest_cache
-__pycache__
-data
-legacy_python
-runtime
-*.bat
-setup.sh
-*.zip
