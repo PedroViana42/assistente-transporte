@@ -31,7 +31,7 @@ export function UploadForm({ error }: { error?: string }) {
       {message ? <div className="error">{message}</div> : null}
       <div className="field">
         <label htmlFor="file">Planilha .xlsx</label>
-        <input id="file" name="file" type="file" accept=".xlsx" required disabled={isSubmitting} />
+        <input id="file" name="file" type="file" accept=".xlsx" required />
         <span className="muted">Formato aceito: .xlsx ate 8 MB.</span>
       </div>
       <div>
