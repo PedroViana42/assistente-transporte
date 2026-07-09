@@ -15,3 +15,5 @@ dist/
 *.tsbuildinfo
 data/**/*.xlsx
 data/**/*.csv
+
+.vercel
