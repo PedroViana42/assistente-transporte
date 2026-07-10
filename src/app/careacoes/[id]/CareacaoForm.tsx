@@ -4,6 +4,7 @@ import { useActionState, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { updateCareacaoAction, type CareacaoActionState } from "../../actions";
 import { CAREACAO_STATUSES, statusLabel } from "@/lib/status";
+import { MoneyInput } from "@/components/MoneyInput";
 
 type CareacaoFormItem = {
   id: number;
@@ -62,13 +63,7 @@ export function CareacaoForm({ item }: { item: CareacaoFormItem }) {
           </div>
           <div className="field">
             <label htmlFor="amount">Valor da careacao</label>
-            <input
-              id="amount"
-              name="amount"
-              defaultValue={item.amount.replace(".", ",")}
-              inputMode="decimal"
-              placeholder="0,00 ou 0.00"
-            />
+            <MoneyInput id="amount" name="amount" defaultValue={item.amount} />
           </div>
           <div className="field">
             <label htmlFor="is_customer_fault">Foi culpa do cliente?</label>

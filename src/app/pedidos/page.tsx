@@ -3,6 +3,7 @@ import { requireSession } from "@/lib/auth";
 import { searchOrders } from "@/lib/data";
 import { formatCurrency, formatDate, faultLabel } from "@/lib/format";
 import { statusLabel } from "@/lib/status";
+import { MoneyInput } from "@/components/MoneyInput";
 import { createCareacaoAction } from "../actions";
 
 export default async function OrdersPage({
@@ -78,13 +79,7 @@ export default async function OrdersPage({
                     <div className="form-grid">
                       <div className="field">
                         <label htmlFor={`amount-${order.id}`}>Valor da careacao</label>
-                        <input
-                          id={`amount-${order.id}`}
-                          name="amount"
-                          inputMode="decimal"
-                          placeholder="0,00 ou 0.00"
-                          required
-                        />
+                        <MoneyInput id={`amount-${order.id}`} name="amount" required />
                       </div>
                       <div className="field">
                         <label htmlFor={`fault-${order.id}`}>Foi culpa do cliente?</label>

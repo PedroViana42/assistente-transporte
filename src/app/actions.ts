@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { clearSessionCookie, createSession, requireSession, setSessionCookie, verifyPassword } from "@/lib/auth";
 import { getPool } from "@/lib/db";
-import { normalizeDecimal } from "@/lib/import/normalizers";
+import { parseMoneyToCents } from "@/lib/money";
 import { CAREACAO_STATUSES, isClosedStatus } from "@/lib/status";
 
 export type CareacaoActionState = {
@@ -31,12 +31,11 @@ function asText(value: FormDataEntryValue | null): string {
 }
 
 function parseAmount(value: string): number {
-  const normalized = normalizeDecimal(value) ?? "0";
-  const amount = Number(normalized);
-  if (!Number.isFinite(amount) || amount < 0) {
+  const cents = value ? parseMoneyToCents(value) : 0;
+  if (cents === null || !Number.isFinite(cents) || cents < 0) {
     throw new Error("Valor da careacao invalido.");
   }
-  return amount;
+  return cents / 100;
 }
 
 function parseCustomerFault(value: string): boolean | null {
