@@ -56,6 +56,14 @@ export function moneyToDecimal(value: unknown): string {
   return moneyCentsToDecimal(parseMoneyToCents(value) ?? 0);
 }
 
+export function moneyMaskInputToCents(value: unknown): number {
+  const digits = onlyDigits(String(value ?? ""));
+  if (!digits) return 0;
+
+  const cents = Number(digits.replace(/^0+(?=\d)/, ""));
+  return Number.isFinite(cents) ? cents : 0;
+}
+
 function parseExplicitDecimal(value: string, separator: "," | "."): number {
   const separatorIndex = value.lastIndexOf(separator);
   const integer = onlyDigits(value.slice(0, separatorIndex)) || "0";

@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { formatMoneyFromCents, moneyToDecimal, parseMoneyToCents } from "@/lib/money";
+import {
+  formatMoneyFromCents,
+  moneyCentsToDecimal,
+  moneyMaskInputToCents,
+  parseMoneyToCents
+} from "@/lib/money";
 
 type MoneyInputProps = {
   id: string;
@@ -11,29 +16,20 @@ type MoneyInputProps = {
 };
 
 export function MoneyInput({ id, name, defaultValue, required }: MoneyInputProps) {
-  const [displayValue, setDisplayValue] = useState(formatDisplayValue(defaultValue ?? 0));
-
-  function handleBlur() {
-    setDisplayValue(formatDisplayValue(displayValue));
-  }
+  const [cents, setCents] = useState(() => Math.max(0, parseMoneyToCents(defaultValue ?? 0) ?? 0));
 
   return (
     <>
-      <input type="hidden" name={name} value={moneyToDecimal(displayValue)} />
+      <input type="hidden" name={name} value={moneyCentsToDecimal(cents)} />
       <input
         id={id}
-        value={displayValue}
+        value={formatMoneyFromCents(cents)}
         type="text"
-        inputMode="decimal"
+        inputMode="numeric"
         required={required}
         onFocus={(event) => event.currentTarget.select()}
-        onBlur={handleBlur}
-        onChange={(event) => setDisplayValue(event.currentTarget.value)}
+        onChange={(event) => setCents(moneyMaskInputToCents(event.currentTarget.value))}
       />
     </>
   );
-}
-
-function formatDisplayValue(value: unknown): string {
-  return formatMoneyFromCents(parseMoneyToCents(value) ?? 0);
 }

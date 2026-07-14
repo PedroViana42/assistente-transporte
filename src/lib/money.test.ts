@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { formatMoneyFromCents, moneyCentsToDecimal, moneyToDecimal, parseMoneyToCents } from "./money";
+import {
+  formatMoneyFromCents,
+  moneyCentsToDecimal,
+  moneyMaskInputToCents,
+  moneyToDecimal,
+  parseMoneyToCents
+} from "./money";
 
 describe("money", () => {
   it("parses typed money values into cents", () => {
@@ -31,5 +37,27 @@ describe("money", () => {
     expect(moneyToDecimal("12,34")).toBe("12.34");
     expect(moneyToDecimal("12.34")).toBe("12.34");
     expect(moneyToDecimal("1.234,56")).toBe("1234.56");
+  });
+
+  it("converts fixed-comma mask input into cents", () => {
+    expect(moneyMaskInputToCents("1")).toBe(1);
+    expect(moneyMaskInputToCents("12")).toBe(12);
+    expect(moneyMaskInputToCents("123")).toBe(123);
+    expect(moneyMaskInputToCents("1234")).toBe(1234);
+    expect(moneyMaskInputToCents("R$ 12,34")).toBe(1234);
+  });
+
+  it("keeps the comma fixed while appending typed digits", () => {
+    let cents = moneyMaskInputToCents("1");
+    expect(formatMoneyFromCents(cents)).toBe("R$ 0,01");
+
+    cents = moneyMaskInputToCents(`${formatMoneyFromCents(cents)}2`);
+    expect(formatMoneyFromCents(cents)).toBe("R$ 0,12");
+
+    cents = moneyMaskInputToCents(`${formatMoneyFromCents(cents)}3`);
+    expect(formatMoneyFromCents(cents)).toBe("R$ 1,23");
+
+    cents = moneyMaskInputToCents(`${formatMoneyFromCents(cents)}4`);
+    expect(formatMoneyFromCents(cents)).toBe("R$ 12,34");
   });
 });
