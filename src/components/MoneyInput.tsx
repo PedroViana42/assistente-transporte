@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { formatMoneyFromCents, moneyCentsToDecimal, parseMoneyToCents } from "@/lib/money";
+import { NumericFormat, type NumberFormatValues } from "react-number-format";
+import { moneyToDecimal } from "@/lib/money";
 
 type MoneyInputProps = {
   id: string;
@@ -11,26 +12,31 @@ type MoneyInputProps = {
 };
 
 export function MoneyInput({ id, name, defaultValue, required }: MoneyInputProps) {
-  const initialCents = parseMoneyToCents(defaultValue) ?? 0;
-  const [displayValue, setDisplayValue] = useState(formatMoneyFromCents(initialCents));
-  const [cents, setCents] = useState(initialCents);
+  const [value, setValue] = useState(moneyToDecimal(defaultValue ?? 0));
 
-  function updateValue(value: string, shouldFormat: boolean) {
-    const nextCents = parseMoneyToCents(value) ?? 0;
-    setCents(nextCents);
-    setDisplayValue(shouldFormat ? formatMoneyFromCents(nextCents) : value);
+  function handleValueChange(values: NumberFormatValues) {
+    setValue(values.value || "0");
   }
 
   return (
     <>
-      <input type="hidden" name={name} value={moneyCentsToDecimal(cents)} />
-      <input
+      <input type="hidden" name={name} value={moneyToDecimal(value)} />
+      <NumericFormat
         id={id}
+        value={value}
+        valueIsNumericString
+        thousandSeparator="."
+        decimalSeparator=","
+        allowedDecimalSeparators={[",", "."]}
+        decimalScale={2}
+        fixedDecimalScale
+        prefix="R$ "
+        allowNegative={false}
+        type="text"
         inputMode="decimal"
-        value={displayValue}
         required={required}
-        onBlur={(event) => updateValue(event.currentTarget.value, true)}
-        onChange={(event) => updateValue(event.currentTarget.value, false)}
+        onFocus={(event) => event.currentTarget.select()}
+        onValueChange={handleValueChange}
       />
     </>
   );

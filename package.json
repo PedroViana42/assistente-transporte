@@ -21,7 +21,8 @@
     "next": "^16.2.10",
     "pg": "^8.13.1",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "react-number-format": "^5.4.5"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

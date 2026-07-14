@@ -23,7 +23,7 @@ export function parseMoneyToCents(value: unknown): number | null {
   } else if (lastDot >= 0) {
     cents = parseSingleSeparator(text, ".");
   } else {
-    cents = Number(text);
+    cents = Number(text) * 100;
   }
 
   if (!Number.isFinite(cents)) return null;
@@ -52,6 +52,10 @@ export function moneyCentsToDecimal(value: number | null | undefined): string {
   return `${sign}${integer}.${fraction}`;
 }
 
+export function moneyToDecimal(value: unknown): string {
+  return moneyCentsToDecimal(parseMoneyToCents(value) ?? 0);
+}
+
 function parseExplicitDecimal(value: string, separator: "," | "."): number {
   const separatorIndex = value.lastIndexOf(separator);
   const integer = onlyDigits(value.slice(0, separatorIndex)) || "0";
@@ -71,7 +75,7 @@ function parseSingleSeparator(value: string, separator: "," | "."): number {
   if (fraction.length === 3 && integer.length <= 3) return Number(`${integer}${fraction}`) * 100;
   if (fraction.length <= 2) return Number(`${integer}${fraction.padEnd(2, "0")}`);
 
-  return Number(`${integer}${fraction}`);
+  return Number(`${integer}${fraction}`) * 100;
 }
 
 function onlyDigits(value: string): string {
